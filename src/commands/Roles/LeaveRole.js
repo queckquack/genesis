@@ -52,12 +52,19 @@ class LeaveRole extends Command {
     }
     const roles = await this.settings.getRolesForGuild(message.guild);
     const filteredRoles = roles.filter(storedRole => role.id === storedRole.id);
+    const botIsHigher = message.guild.members.get(this.bot.client.user.id)
+      .highestRole.comparePositionTo(message.guild.roles.get(role.id));
     const roleRemoveable = filteredRoles.length > 0
           && message.member.roles.get(role.id)
-          && message.channel.permissionsFor(this.bot.client.user.id).has('MANAGE_ROLES');
+          && message.channel.permissionsFor(this.bot.client.user.id).has('MANAGE_ROLES')
+          && botIsHigher;
     const userDoesntHaveRole = filteredRoles.length > 0
           && message.channel.permissionsFor(this.bot.client.user.id).has('MANAGE_ROLES')
           && !message.member.roles.get(role.id);
+    if (!botIsHigher) {
+      await this.sendBotRoleLow(message);
+      return this.messageManager.statuses.FAILURE;
+    }
     if (roleRemoveable) {
       await message.member.removeRole(role.id);
       await this.sendLeft(message, role);
@@ -85,15 +92,18 @@ class LeaveRole extends Command {
   async sendCantLeave(message, userDoesntHaveRole) {
     await this.messageManager.embed(message, {
       title: 'Can\'t Leave',
+      description: userDoesntHaveRole ? 'You aren\'t in that role.' : 'You can\'t leave that role.',
       type: 'rich',
       color: 0x779ECB,
-      fields: [
-        {
-          name: '_ _',
-          value: userDoesntHaveRole ? 'You aren\'t in that role.' : 'You can\'t leave that role.',
-          inline: true,
-        },
-      ],
+    }, true, true);
+  }
+
+  async sendBotRoleLow(message) {
+    await this.messageManager.embed(message, {
+      title: 'Can\'t Assign Role',
+      description: 'Bot\'s role is too low.\nEnsure it is above role to be added.',
+      type: 'rich',
+      color: 0x779ECB,
     }, true, true);
   }
 

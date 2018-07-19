@@ -52,12 +52,18 @@ class JoinRole extends Command {
     }
     const roles = await this.settings.getRolesForGuild(message.guild);
     const filteredRoles = roles.filter(storedRole => role.id === storedRole.id);
-    const roleAddable = filteredRoles.length > 0
-                 && !message.member.roles.get(role.id)
-                 && message.channel.permissionsFor(this.bot.client.user.id).has('MANAGE_ROLES');
+    const botIsHigher = message.guild.members.get(this.bot.client.user.id)
+      .highestRole.comparePositionTo(message.guild.roles.get(role.id));
     const userHasRole = filteredRoles.length > 0
-                 && message.member.roles.get(role.id)
-                 && message.channel.permissionsFor(this.bot.client.user.id).has('MANAGE_ROLES');
+                   && message.member.roles.get(role.id)
+                   && message.channel.permissionsFor(this.bot.client.user.id).has('MANAGE_ROLES');
+    const roleAddable = !userHasRole && botIsHigher;
+
+    this.logger.debug(`Bot role higher: ${botIsHigher}`);
+    if (!botIsHigher) {
+      await this.sendBotRoleLow(message);
+      return this.messageManager.statuses.FAILURE;
+    }
     if (roleAddable) {
       await message.member.addRole(role.id);
       await this.sendJoined(message, role);
@@ -70,15 +76,9 @@ class JoinRole extends Command {
   async sendJoined(message, role) {
     await this.messageManager.embed(message, {
       title: 'Joined Role',
+      description: role.name,
       type: 'rich',
       color: 0x779ECB,
-      fields: [
-        {
-          name: '_ _',
-          value: role.name,
-          inline: true,
-        },
-      ],
     }, true, true);
   }
 
@@ -86,15 +86,18 @@ class JoinRole extends Command {
   async sendCantJoin(message, userHasRole) {
     await this.messageManager.embed(message, {
       title: 'Can\'t Join',
+      description: userHasRole ? 'You already have that role.' : 'You can\'t join that role.',
       type: 'rich',
       color: 0x779ECB,
-      fields: [
-        {
-          name: '_ _',
-          value: userHasRole ? 'You already have that role.' : 'You can\'t join that role.',
-          inline: true,
-        },
-      ],
+    }, true, true);
+  }
+
+  async sendBotRoleLow(message) {
+    await this.messageManager.embed(message, {
+      title: 'Can\'t Assign Role',
+      description: 'Bot\'s role is too low.\nEnsure it is above role to be added.',
+      type: 'rich',
+      color: 0x779ECB,
     }, true, true);
   }
 

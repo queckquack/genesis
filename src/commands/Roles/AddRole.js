@@ -19,6 +19,9 @@ function getRoleForString(string, message) {
   return roleFromId || roleFromName || null;
 }
 
+const createRegex = new RegExp('--create', 'ig');
+const mentionableRegex = new RegExp('--mentionable', 'ig');
+
 /**
  * Add a joinable role
  */
@@ -27,9 +30,9 @@ class AddRole extends Command {
     super(bot, 'settings.addRole', 'add role');
     this.usages = [
       { description: 'Show instructions for adding joinable roles', parameters: [] },
-      { description: 'Add a role', parameters: ['Role/Role id to add'] },
+      { description: 'Add a role', parameters: ['Role/Role id to add', '--create', '--mentionable'] },
     ];
-    this.regex = new RegExp(`^${this.call}\\s?(.*)?`, 'i');
+    this.regex = new RegExp(`^${this.call}\\s?(.*)?\\s?(--create)?\\s?(--mentionable)?`, 'i');
     this.requiresAuth = true;
     this.allowDM = false;
   }
@@ -41,13 +44,24 @@ class AddRole extends Command {
    * @returns {string} success status
    */
   async run(message) {
-    const stringRole = message.strippedContent.replace(`${this.call} `, '');
+    const create = createRegex.test(message.strippedContent);
+    const mentionable = mentionableRegex.test(message.strippedContent);
+    const stringRole = message.strippedContent
+      .replace(`${this.call} `, '').replace('--create', '')
+      .replace('--mentionable', '').trim();
     if (!stringRole) {
       await this.sendInstructionEmbed(message);
       return this.messageManager.statuses.FAILURE;
     }
-    const role = getRoleForString(stringRole, message);
-    if (!role) {
+    let role = getRoleForString(stringRole, message);
+    if (create && message.guild.members
+      .get(this.bot.client.user.id).hasPermission('MANAGE_ROLES')) {
+      role = await message.guild.createRole({
+        name: stringRole,
+        permissions: 0,
+        mentionable,
+      }, 'Add Role Command with create flag');
+    } else if (!role) {
       await this.sendInstructionEmbed(message);
       return this.messageManager.statuses.FAILURE;
     }

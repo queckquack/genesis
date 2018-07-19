@@ -49,7 +49,7 @@ async function checkPrivateRooms(self, shardId) {
  * @param {Bot} self  the bot
  */
 async function updatePresence(self) {
-  const cetusState = (await self.bot.caches.pc.getDataJson()).cetusCycle;
+  const cetusState = (await self.bot.worldStates.pc.getData()).cetusCycle;
   if (cetusState) {
     self.client.user.setPresence({
       status: 'online',
