@@ -5,7 +5,7 @@
   "main": "main.js",
   "scripts": {
     "test": "eslint main.js src/",
-    "build-docs": "node_modules/.bin/jsdoc -t ./node_modules/ink-docstrap/template -c jsdoc.conf -R README.md -r main.js src/. -d docs",
+    "build-docs": "node_modules/.bin/jsdoc -t ./node_modules/ink-docstrap/template -c .github/docs/jsdoc.conf -R README.md -r main.js src/. -d docs",
     "start": "pm2 start genesis.json && pm2 logs genesis",
     "preinstall": "npm i -g pm2",
     "restart": "pm2 delete genesis && pm2 start genesis.json && pm2 logs genesis",
