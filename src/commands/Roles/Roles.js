@@ -23,7 +23,7 @@ class Roles extends Command {
     const roles = await this.settings.getRolesForGuild(message.guild);
     const prefix = await this.settings.getGuildSetting(message.guild, 'prefix');
     if (roles.length > 0) {
-      const longest = roles.map(role => role.name)
+      const longest = roles.map(role => role.guildRole.name)
         .reduce((a, b) => (a.length > b.length ? a : b));
       const groupedRoles = createGroupedArray(roles, 20);
       const metaGroups = createGroupedArray(groupedRoles, 4);

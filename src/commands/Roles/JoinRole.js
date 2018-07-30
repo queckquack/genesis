@@ -120,7 +120,7 @@ class JoinRole extends Command {
     const prefix = await this.settings.getGuildSetting(message.guild, 'prefix');
     embed.fields[0].name = `${prefix}${this.call} <role or role id>`;
     const roles = await this.settings.getRolesForGuild(message.guild);
-    embed.fields[1].value = roles.length ? roles.map(role => role.name).join('; ') : 'No possible roles';
+    embed.fields[1].value = roles.length ? roles.map(role => role.guildRole.name).join('; ') : 'No possible roles';
     this.messageManager.embed(message, embed, true, false);
   }
 }

@@ -1,6 +1,7 @@
 'use strict';
 
 const Command = require('../../models/Command.js');
+const JoinableRole = require('../../models/JoinableRole.js');
 
 /**
  * Get a role from the matching string
@@ -21,6 +22,8 @@ function getRoleForString(string, message) {
 
 const createRegex = new RegExp('--create', 'ig');
 const mentionableRegex = new RegExp('--mentionable', 'ig');
+const leavableRegex = new RegExp('--leaveable (on|off)', 'ig');
+const reqRoleRegex = new RegExp('--requires (?:<@&)?(\\d{15,20})(>)?', 'ig');
 
 /**
  * Add a joinable role
@@ -30,7 +33,7 @@ class AddRole extends Command {
     super(bot, 'settings.addRole', 'add role');
     this.usages = [
       { description: 'Show instructions for adding joinable roles', parameters: [] },
-      { description: 'Add a role', parameters: ['Role/Role id to add', '--create', '--mentionable'] },
+      { description: 'Add a role', parameters: ['Role/Role id to add', '--create', '--mentionable', '--leavable (on | off)', '--requires @Role Mention'] },
     ];
     this.regex = new RegExp(`^${this.call}\\s?(.*)?\\s?(--create)?\\s?(--mentionable)?`, 'i');
     this.requiresAuth = true;
@@ -47,8 +50,12 @@ class AddRole extends Command {
     const create = createRegex.test(message.strippedContent);
     const mentionable = mentionableRegex.test(message.strippedContent);
     const stringRole = message.strippedContent
-      .replace(`${this.call} `, '').replace('--create', '')
-      .replace('--mentionable', '').trim();
+      .replace(`${this.call} `, '')
+      .replace('--create', '')
+      .replace('--mentionable', '')
+      .replace(leavableRegex, '')
+      .replace(reqRoleRegex, '')
+      .trim();
     if (!stringRole) {
       await this.sendInstructionEmbed(message);
       return this.messageManager.statuses.FAILURE;
@@ -71,14 +78,25 @@ class AddRole extends Command {
       await this.sendAlreadyAddedEmbed(message);
       return this.messageManager.statuses.FAILURE;
     }
-    const rolesToCommit = roles.map(innerRole => innerRole.id);
-    rolesToCommit.push(role.id);
+    const rolesToCommit = roles.map(innerRole => innerRole);
+    const newRole = new JoinableRole(role);
+    if (reqRoleRegex.test(message.strippedContent)) {
+      const reqRoleRes = message.strippedContent.match(reqRoleRegex);
+      newRole.requiredRole = reqRoleRes[0] ? message.guild.roles.get(reqRoleRes) : undefined;
+    }
+    if (leavableRegex.test(message.strippedContent)
+      && message.strippedContent.match(leavableRegex).length) {
+      const isLeavable = message.strippedContent.match(leavableRegex)[0].trim() === 'on';
+      newRole.isLeavable = isLeavable;
+    }
+    rolesToCommit.push(role);
     await this.addAndCommitRole(message, rolesToCommit, role.name);
     return this.messageManager.statuses.SUCCESS;
   }
 
   async addAndCommitRole(message, roles, newRole) {
-    await this.settings.setRolesForGuild(message.guild, roles);
+    await this.settings.setRolesForGuild(message.guild,
+      roles.map(role => JSON.stringify(role.role)));
     await this.messageManager.embed(message, {
       title: 'Added role to joinable list',
       type: 'rich',

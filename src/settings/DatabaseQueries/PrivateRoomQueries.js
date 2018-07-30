@@ -1,6 +1,7 @@
 'use strict';
 
 const SQL = require('sql-template-strings');
+const JoinableRole = require('../../models/JoinableRole');
 
 class PrivateRoomQueries {
   constructor(db) {
@@ -36,10 +37,23 @@ class PrivateRoomQueries {
       WHERE guild_id=${guild.id}`;
     const res = await this.db.query(query);
     if (res[0][0]) {
-      const validListIds = res[0][0].id_list
-        .filter(id => typeof this.bot.client.guilds.get(guild.id).roles.get(id) !== 'undefined');
-      const validList = validListIds
-        .map(id => this.bot.client.guilds.get(guild.id).roles.get(id));
+      const validList = res[0][0].id_list
+        .filter((role) => {
+          if (typeof role === 'object') {
+            return typeof this.bot.client.guilds.get(guild.id).roles.get(role.id) !== 'undefined';
+          } if (typeof role === 'string') {
+            return typeof this.bot.client.guilds.get(guild.id).roles.get(role) !== 'undefined';
+          }
+          return undefined;
+        }).map((role) => {
+          if (typeof role === 'object') {
+            return new JoinableRole(role.guildRole);
+          } if (typeof role === 'string') {
+            return new JoinableRole(this.bot.client.guilds.get(guild.id).roles.get(role));
+          }
+          return undefined;
+        })
+        .filter(role => role);
       return validList;
     }
     return [];
