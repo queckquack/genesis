@@ -65,7 +65,7 @@ class LeaveRole extends Command {
       await this.sendBotRoleLow(message);
       return this.messageManager.statuses.FAILURE;
     }
-    if (roleRemoveable) {
+    if (roleRemoveable && role.leavable) {
       await message.member.removeRole(role.id);
       await this.sendLeft(message, role);
       return this.messageManager.statuses.SUCCESS;

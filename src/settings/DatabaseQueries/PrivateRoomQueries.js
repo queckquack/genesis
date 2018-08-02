@@ -39,17 +39,29 @@ class PrivateRoomQueries {
     if (res[0][0]) {
       const validList = res[0][0].id_list
         .filter((role) => {
-          if (typeof role === 'object') {
-            return typeof this.bot.client.guilds.get(guild.id).roles.get(role.id) !== 'undefined';
-          } if (typeof role === 'string') {
-            return typeof this.bot.client.guilds.get(guild.id).roles.get(role) !== 'undefined';
+          if (!role) {
+            return undefined;
+          }
+          const parsed = JSON.parse(role);
+          if (typeof parsed === 'object') {
+            return typeof guild.roles.has(parsed.id);
+          } if (typeof parsed === 'number') {
+            return guild.roles.has(String(parsed));
           }
           return undefined;
         }).map((role) => {
-          if (typeof role === 'object') {
-            return new JoinableRole(role.guildRole);
-          } if (typeof role === 'string') {
-            return new JoinableRole(this.bot.client.guilds.get(guild.id).roles.get(role));
+          const parsed = JSON.parse(role);
+          if (typeof parsed === 'object') {
+            const joinable = new JoinableRole(guild.roles.get(parsed.id));
+            if (parsed.requirdRole) {
+              joinable.requiedRole = guild.roles.has(parsed.requiredRole)
+                ? guild.roles.get(parsed.requiredRole)
+                : undefined;
+            }
+            joinable.isLeaveable = parsed.leavable;
+            return joinable;
+          } if (typeof parsed === 'string') {
+            return new JoinableRole(guild.roles.get(parsed));
           }
           return undefined;
         })

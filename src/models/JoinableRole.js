@@ -34,11 +34,11 @@ class JoinableRole {
     }
   }
 
-  get role() {
+  getSimple() {
     return {
       id: this.id,
-      requiredRole: this.requiredRole,
-      leaveable: this.isLeavable,
+      requiredRole: this.requiredRoleId,
+      leaveable: this.leaveable,
     };
   }
 }

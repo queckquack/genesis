@@ -89,14 +89,15 @@ class AddRole extends Command {
       const isLeavable = message.strippedContent.match(leavableRegex)[0].trim() === 'on';
       newRole.isLeavable = isLeavable;
     }
-    rolesToCommit.push(role);
+    console.log(JSON.stringify(newRole.getSimple()));
+    rolesToCommit.push(newRole.getSimple());
     await this.addAndCommitRole(message, rolesToCommit, role.name);
     return this.messageManager.statuses.SUCCESS;
   }
 
   async addAndCommitRole(message, roles, newRole) {
     await this.settings.setRolesForGuild(message.guild,
-      roles.map(role => JSON.stringify(role.role)));
+      roles.map(role => JSON.stringify(role)));
     await this.messageManager.embed(message, {
       title: 'Added role to joinable list',
       type: 'rich',

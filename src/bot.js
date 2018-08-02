@@ -53,7 +53,7 @@ class Genesis {
      * @private
      */
     this.client = new Discord.Client({
-      fetchAllMembers: true,
+      fetchAllMembers: false,
       ws: {
         compress: true,
         large_threshold: 1000,
